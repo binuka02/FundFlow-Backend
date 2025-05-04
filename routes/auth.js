@@ -77,14 +77,87 @@ router.post("/login", async (req, res) => {
     res.json({
       token,
       user: {
-        name: user.fullName,
-        role: user.role,
+        _id: user._id,
+        name: user.fullName, // ✅ include name for frontend
         email: user.email,
+        role: user.role,
       },
       message: "Login successful",
     });
   } catch (err) {
     console.error(err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// Get user by email
+router.get("/users/email/:email", async (req, res) => {
+  try {
+    const user = await User.findOne({ email: req.params.email }).select(
+      "-passwordHash"
+    );
+    if (!user) return res.status(404).json({ message: "User not found" });
+    res.json(user);
+  } catch (err) {
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// Update profile
+router.put("/profile/:id", upload.single("image"), async (req, res) => {
+  try {
+    const {
+      organizationName,
+      organizationEmail,
+      contactNumber,
+      description,
+      currentPassword,
+      newPassword,
+      confirmNewPassword,
+    } = req.body;
+    const user = await User.findById(req.params.id);
+
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    if (currentPassword && newPassword && confirmNewPassword) {
+      const isMatch = await bcrypt.compare(currentPassword, user.passwordHash);
+      if (!isMatch)
+        return res
+          .status(400)
+          .json({ message: "Current password is incorrect" });
+      if (newPassword !== confirmNewPassword)
+        return res.status(400).json({ message: "New passwords do not match" });
+      user.passwordHash = await bcrypt.hash(newPassword, 10);
+    }
+
+    user.fullName = organizationName || user.fullName;
+    user.email = organizationEmail || user.email;
+    user.mobileNumber = contactNumber || user.mobileNumber;
+    user.description = description || user.description;
+
+    if (req.file) {
+      user.image = req.file.filename;
+    }
+
+    await user.save();
+    res.json({ message: "Profile updated successfully", user });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// Get users (with optional role filter)
+router.get("/users", async (req, res) => {
+  try {
+    const role = req.query.role;
+    let query = {};
+    if (role) {
+      query.role = role;
+    }
+    const users = await User.find(query).select("-passwordHash");
+    res.json(users);
+  } catch (err) {
     res.status(500).json({ message: "Server error" });
   }
 });

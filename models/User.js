@@ -10,6 +10,8 @@ const userSchema = new mongoose.Schema(
     nicNumber: String,
     nicDocument: String,
     role: { type: String, enum: ["donor", "charity", "admin"] },
+    image: { type: String, default: "" },
+    description: { type: String, default: "" },
   },
   { timestamps: true }
 );

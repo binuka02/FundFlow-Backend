@@ -5,6 +5,7 @@ const Post = require("../models/Post");
 const Stripe = require("stripe");
 const stripe = Stripe(process.env.STRIPE_SECRET_KEY);
 
+// Record donation (existing)
 router.post("/record", async (req, res) => {
   const { postId, donorName, donorEmail, amount, sessionId } = req.body;
 
@@ -29,7 +30,6 @@ router.post("/record", async (req, res) => {
       { new: true }
     );
 
-    // ✅ Check if goal reached or exceeded
     if (post.raised + amount >= post.goal) {
       await Post.findByIdAndDelete(postId);
       console.log(`Post ${postId} deleted: goal reached.`);
@@ -42,23 +42,41 @@ router.post("/record", async (req, res) => {
   }
 });
 
-// Get donations for organization view
-router.get("/post/:postId", async (req, res) => {
+// Get leaderboard with filters
+router.get("/leaderboard", async (req, res) => {
   try {
-    const donations = await Donation.find({ postId: req.params.postId });
-    res.json(donations);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
+    const { range } = req.query; // 'day', 'week', 'month'
+    let dateFilter = {};
 
-router.get("/", async (req, res) => {
-  try {
-    const donations = await Donation.find()
-      .sort({ createdAt: -1 })
-      .populate("postId", "programName");
-    res.json(donations);
+    const now = new Date();
+    if (range === "day") {
+      dateFilter = {
+        $gte: new Date(now.getFullYear(), now.getMonth(), now.getDate()),
+      };
+    } else if (range === "week") {
+      const weekStart = new Date(now.setDate(now.getDate() - now.getDay()));
+      dateFilter = { $gte: weekStart };
+    } else if (range === "month") {
+      dateFilter = { $gte: new Date(now.getFullYear(), now.getMonth(), 1) };
+    }
+
+    const matchStage = range ? { createdAt: dateFilter } : {};
+
+    const leaderboard = await Donation.aggregate([
+      { $match: matchStage },
+      {
+        $group: {
+          _id: "$donorName",
+          totalPoints: { $sum: "$amount" },
+        },
+      },
+      { $sort: { totalPoints: -1 } },
+      { $limit: 10 },
+    ]);
+
+    res.json(leaderboard);
   } catch (err) {
+    console.error("Error fetching leaderboard:", err.message);
     res.status(500).json({ error: err.message });
   }
 });
