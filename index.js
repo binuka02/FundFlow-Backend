@@ -6,6 +6,8 @@ const postRoutes = require("./routes/postRoutes");
 const checkoutRoutes = require("./routes/stripeRoute");
 const donations = require("./routes/donations");
 const feedbacks = require("./routes/feeebackRoutes");
+const gallery = require("./routes/gallery");
+const users = require("./routes/users");
 
 require("dotenv").config();
 
@@ -28,6 +30,8 @@ app.use("/api/posts", postRoutes);
 app.use("/api/create-checkout-session", checkoutRoutes);
 app.use("/api/donations", donations);
 app.use("/api/feedbacks", feedbacks);
+app.use("/api/gallery", gallery);
+app.use("/api/users", users);
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));

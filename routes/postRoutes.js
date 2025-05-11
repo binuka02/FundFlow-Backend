@@ -29,7 +29,9 @@ router.post("/", upload.single("image"), async (req, res) => {
 // Get all posts
 router.get("/", async (req, res) => {
   try {
-    const posts = await Post.find();
+    const { charityId } = req.query;
+    const filter = charityId ? { charityId } : {};
+    const posts = await Post.find(filter);
     res.json(posts);
   } catch (err) {
     res.status(500).json({ error: err.message });

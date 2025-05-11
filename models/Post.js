@@ -1,6 +1,11 @@
 const mongoose = require("mongoose");
 
 const postSchema = new mongoose.Schema({
+  charityId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User",
+    required: true,
+  },
   programName: String,
   goal: Number,
   programDescription: String,

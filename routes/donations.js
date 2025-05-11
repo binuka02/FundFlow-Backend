@@ -5,6 +5,32 @@ const Post = require("../models/Post");
 const Stripe = require("stripe");
 const stripe = Stripe(process.env.STRIPE_SECRET_KEY);
 
+// Get donations only for the logged-in organization
+router.get("/", async (req, res) => {
+  try {
+    const { organizationEmail } = req.query;
+
+    if (!organizationEmail) {
+      return res.status(400).json({ error: "organizationEmail is required" });
+    }
+
+    // Find all posts that belong to this organization
+    const posts = await Post.find({ organizationEmail }).select("_id");
+
+    const postIds = posts.map((post) => post._id);
+
+    // Find donations related to those posts
+    const donations = await Donation.find({ postId: { $in: postIds } })
+      .populate("postId")
+      .sort({ createdAt: -1 });
+
+    res.json(donations);
+  } catch (err) {
+    console.error("Error fetching donations:", err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // Record donation (existing)
 router.post("/record", async (req, res) => {
   const { postId, donorName, donorEmail, amount, sessionId } = req.body;
