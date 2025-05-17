@@ -8,15 +8,21 @@ const upload = multer({ dest: "uploads/" });
 // Create post
 router.post("/", upload.single("image"), async (req, res) => {
   try {
-    const { programName, goal, programDescription, organizationEmail } =
-      req.body;
+    const {
+      programName,
+      goal,
+      programDescription,
+      organizationEmail,
+      charityId,
+    } = req.body;
 
     const post = new Post({
       programName,
       goal,
       programDescription,
-      image: req.file.filename,
+      image: req.file?.filename || null,
       organizationEmail,
+      charityId,
     });
 
     await post.save();
@@ -48,6 +54,17 @@ router.get("/:id", async (req, res) => {
     res.json(post);
   } catch (err) {
     res.status(500).json({ error: err.message });
+  }
+});
+
+// GET posts by organization email
+router.get("/by-email/:email", async (req, res) => {
+  try {
+    const posts = await Post.find({ organizationEmail: req.params.email });
+    res.json(posts);
+  } catch (err) {
+    console.error("Error fetching posts by email:", err);
+    res.status(500).json({ error: "Failed to fetch posts" });
   }
 });
 

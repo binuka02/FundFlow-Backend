@@ -1,16 +1,16 @@
 const mongoose = require("mongoose");
 
 const postSchema = new mongoose.Schema({
+  programName: { type: String, required: true },
+  goal: { type: Number, required: true },
+  programDescription: { type: String, required: true },
+  image: { type: String },
+  organizationEmail: { type: String, required: true },
   charityId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "User",
     required: true,
   },
-  programName: String,
-  goal: Number,
-  programDescription: String,
-  image: String,
-  organizationEmail: String,
   raised: { type: Number, default: 0 },
 });
 
