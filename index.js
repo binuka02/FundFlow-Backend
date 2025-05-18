@@ -43,6 +43,8 @@ app.use("/api/users", users);
 app.use("/api/chats", chatRoutes);
 app.use("/api/messages", messageRoutes);
 
+app.use("/uploads", express.static("uploads"));
+
 // Setup Socket.IO with the HTTP server
 setupSocket(server);
 

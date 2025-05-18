@@ -54,4 +54,15 @@ router.get("/home-slides", (req, res) => {
   });
 });
 
+// GET /api/gallery → Get all gallery items
+router.get("/", async (req, res) => {
+  try {
+    const galleryItems = await Gallery.find();
+    res.json(galleryItems);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Error fetching gallery items" });
+  }
+});
+
 module.exports = router;

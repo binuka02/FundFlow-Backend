@@ -119,30 +119,77 @@ router.put("/profile/:id", upload.single("image"), async (req, res) => {
     } = req.body;
 
     const user = await User.findById(req.params.id);
-    if (!user) return res.status(404).json({ message: "User not found" });
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
 
-    if (currentPassword && newPassword && confirmNewPassword) {
+    // Handle password update
+    if (currentPassword || newPassword || confirmNewPassword) {
+      if (!currentPassword || !newPassword || !confirmNewPassword) {
+        return res
+          .status(400)
+          .json({ message: "All password fields are required" });
+      }
+
       const isMatch = await bcrypt.compare(currentPassword, user.passwordHash);
-      if (!isMatch)
+      if (!isMatch) {
         return res
           .status(400)
           .json({ message: "Current password is incorrect" });
-      if (newPassword !== confirmNewPassword)
+      }
+
+      if (newPassword !== confirmNewPassword) {
         return res.status(400).json({ message: "New passwords do not match" });
+      }
+
       user.passwordHash = await bcrypt.hash(newPassword, 10);
     }
 
-    user.fullName = organizationName || user.fullName;
-    user.email = organizationEmail || user.email;
-    user.mobileNumber = contactNumber || user.mobileNumber;
-    user.description = description || user.description;
-
+    // Update other fields
+    if (organizationName) user.fullName = organizationName;
+    if (organizationEmail) user.email = organizationEmail;
+    if (contactNumber) user.mobileNumber = contactNumber;
+    if (description) user.description = description;
     if (req.file) user.image = req.file.filename;
 
     await user.save();
-    res.json({ message: "Profile updated successfully", user });
+
+    res.json({
+      message: "Profile updated successfully",
+      user: {
+        _id: user._id,
+        fullName: user.fullName,
+        email: user.email,
+        mobileNumber: user.mobileNumber,
+        description: user.description,
+        image: user.image,
+      },
+    });
   } catch (err) {
-    console.error(err);
+    console.error("Profile update failed:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// GET user by email
+router.get("/users/email/:email", async (req, res) => {
+  try {
+    const user = await User.findOne({ email: req.params.email });
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    res.json({
+      _id: user._id,
+      fullName: user.fullName,
+      email: user.email,
+      mobileNumber: user.mobileNumber,
+      description: user.description || "",
+      image: user.image || "",
+    });
+  } catch (err) {
+    console.error("Error fetching user by email:", err);
     res.status(500).json({ message: "Server error" });
   }
 });
