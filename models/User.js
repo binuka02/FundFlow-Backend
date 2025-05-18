@@ -12,6 +12,7 @@ const userSchema = new mongoose.Schema(
     role: { type: String, enum: ["donor", "charity", "admin"] },
     image: { type: String, default: "" },
     description: { type: String, default: "" },
+    approved: { type: Boolean, default: false },
   },
   { timestamps: true }
 );

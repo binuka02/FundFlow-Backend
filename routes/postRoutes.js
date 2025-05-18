@@ -68,6 +68,37 @@ router.get("/by-email/:email", async (req, res) => {
   }
 });
 
+// Update a post
+router.put("/:id", upload.single("image"), async (req, res) => {
+  try {
+    const { programName, goal, programDescription } = req.body;
+
+    const updatedFields = {
+      programName,
+      goal,
+      programDescription,
+    };
+
+    if (req.file) {
+      updatedFields.image = req.file.filename;
+    }
+
+    const updatedPost = await Post.findByIdAndUpdate(
+      req.params.id,
+      { $set: updatedFields },
+      { new: true }
+    );
+
+    if (!updatedPost) {
+      return res.status(404).json({ error: "Post not found" });
+    }
+
+    res.json(updatedPost);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // routes/posts.js
 // router.post("/update-donation/:id", async (req, res) => {
 //   try {

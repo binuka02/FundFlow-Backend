@@ -6,10 +6,23 @@ const User = require("../models/User");
 require("dotenv").config();
 
 const router = express.Router();
-const upload = multer({ dest: "uploads/" });
+const path = require("path");
+
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, "uploads/");
+  },
+  filename: (req, file, cb) => {
+    const ext = path.extname(file.originalname); // e.g. .jpg, .png, .pdf
+    const uniqueName = `${Date.now()}-${file.fieldname}${ext}`;
+    cb(null, uniqueName);
+  },
+});
+
+const upload = multer({ storage });
 const JWT_SECRET = process.env.JWT_SECRET;
 
-// Signup
+// SIGNUP
 router.post("/signup", upload.single("nicDocument"), async (req, res) => {
   try {
     const {
@@ -22,18 +35,15 @@ router.post("/signup", upload.single("nicDocument"), async (req, res) => {
       nicNumber,
       role,
     } = req.body;
-    const nicDocument = req.file ? req.file.filename : null;
 
-    if (password !== confirmPassword) {
+    if (password !== confirmPassword)
       return res.status(400).json({ message: "Passwords do not match" });
-    }
-
     const existingUser = await User.findOne({ email });
-    if (existingUser) {
+    if (existingUser)
       return res.status(400).json({ message: "User already exists" });
-    }
 
     const passwordHash = await bcrypt.hash(password, 10);
+    const nicDocument = req.file ? req.file.filename : null;
 
     const user = new User({
       fullName,
@@ -44,30 +54,34 @@ router.post("/signup", upload.single("nicDocument"), async (req, res) => {
       nicNumber,
       nicDocument,
       role,
+      approved: false,
     });
 
     await user.save();
-
-    res.status(201).json({ message: "User registered successfully" });
+    res.status(201).json({
+      message: "User registered successfully. Awaiting admin approval.",
+    });
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Server error" });
   }
 });
 
-// Login
+// LOGIN
 router.post("/login", async (req, res) => {
   try {
     const { email, password, role } = req.body;
-
     const user = await User.findOne({ email, role });
-    if (!user) {
+    if (!user)
       return res.status(400).json({ message: "Invalid email or role" });
-    }
 
     const isMatch = await bcrypt.compare(password, user.passwordHash);
-    if (!isMatch) {
-      return res.status(400).json({ message: "Invalid password" });
+    if (!isMatch) return res.status(400).json({ message: "Invalid password" });
+
+    if (!user.approved) {
+      return res
+        .status(403)
+        .json({ message: "Your account is awaiting admin approval." });
     }
 
     const token = jwt.sign({ userId: user._id, role: user.role }, JWT_SECRET, {
@@ -78,9 +92,10 @@ router.post("/login", async (req, res) => {
       token,
       user: {
         _id: user._id,
-        name: user.fullName, // ✅ include name for frontend
+        name: user.fullName,
         email: user.email,
         role: user.role,
+        approved: user.approved,
       },
       message: "Login successful",
     });
@@ -90,20 +105,7 @@ router.post("/login", async (req, res) => {
   }
 });
 
-// Get user by email
-router.get("/users/email/:email", async (req, res) => {
-  try {
-    const user = await User.findOne({ email: req.params.email }).select(
-      "-passwordHash"
-    );
-    if (!user) return res.status(404).json({ message: "User not found" });
-    res.json(user);
-  } catch (err) {
-    res.status(500).json({ message: "Server error" });
-  }
-});
-
-// Update profile
+// UPDATE PROFILE
 router.put("/profile/:id", upload.single("image"), async (req, res) => {
   try {
     const {
@@ -115,8 +117,8 @@ router.put("/profile/:id", upload.single("image"), async (req, res) => {
       newPassword,
       confirmNewPassword,
     } = req.body;
-    const user = await User.findById(req.params.id);
 
+    const user = await User.findById(req.params.id);
     if (!user) return res.status(404).json({ message: "User not found" });
 
     if (currentPassword && newPassword && confirmNewPassword) {
@@ -135,29 +137,12 @@ router.put("/profile/:id", upload.single("image"), async (req, res) => {
     user.mobileNumber = contactNumber || user.mobileNumber;
     user.description = description || user.description;
 
-    if (req.file) {
-      user.image = req.file.filename;
-    }
+    if (req.file) user.image = req.file.filename;
 
     await user.save();
     res.json({ message: "Profile updated successfully", user });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ message: "Server error" });
-  }
-});
-
-// Get users (with optional role filter)
-router.get("/users", async (req, res) => {
-  try {
-    const role = req.query.role;
-    let query = {};
-    if (role) {
-      query.role = role;
-    }
-    const users = await User.find(query).select("-passwordHash");
-    res.json(users);
-  } catch (err) {
     res.status(500).json({ message: "Server error" });
   }
 });
