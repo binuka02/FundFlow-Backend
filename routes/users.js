@@ -83,4 +83,48 @@ router.get("/:id", async (req, res) => {
   }
 });
 
+// GET profile by ID
+router.get("/profile/:id", async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id).select("-passwordHash");
+    if (!user) return res.status(404).json({ message: "User not found" });
+    res.json(user);
+  } catch (err) {
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// UPDATE profile by ID
+router.put("/profile/:id", async (req, res) => {
+  try {
+    const {
+      fullName,
+      email,
+      occupation,
+      mobileNumber,
+      nicNumber,
+      description,
+      image, // base64 image string
+    } = req.body;
+
+    const updatedUser = await User.findByIdAndUpdate(
+      req.params.id,
+      {
+        fullName,
+        email,
+        occupation,
+        mobileNumber,
+        nicNumber,
+        description,
+        image,
+      },
+      { new: true }
+    ).select("-passwordHash");
+
+    res.json(updatedUser);
+  } catch (err) {
+    res.status(500).json({ message: "Update failed", error: err.message });
+  }
+});
+
 module.exports = router;

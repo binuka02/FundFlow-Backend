@@ -107,4 +107,34 @@ router.get("/leaderboard", async (req, res) => {
   }
 });
 
+// GET donation history by donor email
+router.get("/history/:email", async (req, res) => {
+  try {
+    const donations = await Donation.find({
+      donorEmail: req.params.email,
+    }).sort({ createdAt: -1 });
+    res.json(donations);
+  } catch (err) {
+    res.status(500).json({ message: "Error fetching donation history" });
+  }
+});
+
+// Get donation history by donor email with populated post data
+router.get("/history/:email", async (req, res) => {
+  console.log("📨 Route HIT for email:", req.params.email); // <-- TEMP LOG
+
+  try {
+    const donations = await Donation.find({ donorEmail: req.params.email })
+      .sort({ createdAt: -1 })
+      .populate("postId", "programName");
+
+    console.log("✅ Populated donations:", donations); // <-- TEMP LOG
+
+    res.json(donations);
+  } catch (err) {
+    console.error("❌ Error fetching donations:", err);
+    res.status(500).json({ message: "Error fetching donation history" });
+  }
+});
+
 module.exports = router;
