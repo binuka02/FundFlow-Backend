@@ -29,9 +29,6 @@ Frontend Repo: [FundFlow Frontend](https://github.com/binuka02/FundFlow)
 
 ---
 
-
----
-
 ## 🔐 Environment Variables
 
 To run this project, you will need to create a `.env` file in the root directory and add the following environment variables:
