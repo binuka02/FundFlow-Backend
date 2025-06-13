@@ -2,7 +2,7 @@
 
 This is the **backend** of the FundFlow project – a MERN-stack application designed to facilitate transparent and secure charitable donations. This Express.js server provides RESTful APIs for user management, campaign handling, Stripe payments, and real-time chat integration.
 
-Frontend Repo: [FundFlow Frontend]([https://github.com/binuka02/FundFlow](https://github.com/binuka02/FundFlow-Frontend))
+Frontend Repo: [FundFlow Frontend](https://github.com/binuka02/FundFlow-Frontend)
 
 ---
 
